@@ -1,0 +1,16 @@
+# secrets / machine-local
+.env
+.env.local
+*.pem
+KILL
+
+# runtime data: account-specific or regenerable (state files, run logs, cached market data)
+state/
+logs/
+data/
+__pycache__/
+*.pyc
+
+# private journals: contain account details and personal goals, kept local while the remote is a public fork
+DIARY.md
+EXPERIMENT_LOG.md

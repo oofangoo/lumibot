@@ -1,0 +1,30 @@
+#!/bin/sh
+# Blocks commits that would leak secrets or private data into the (public) fork. Enabled with: git config core.hooksPath .githooks
+# Bypass only knowingly with `git commit --no-verify` (don't, for these checks).
+fail=0
+
+# 1. files that must never be tracked
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$f" in
+    .env|.env.local|*/.env|*/.env.local|*.pem|KILL|DIARY.md|EXPERIMENT_LOG.md|state/*|logs/*|data/*)
+      echo "pre-commit: refusing to commit private/runtime file: $f"; fail=1 ;;
+  esac
+done
+
+# 2. secret-looking or machine-specific content in added lines
+added=$(git diff --cached -U0 --diff-filter=ACMR | grep '^+' | grep -v '^+++')
+if echo "$added" | grep -Eq '(^|[^A-Za-z0-9])(PK|AK)[A-Z0-9]{18,}([^A-Za-z0-9]|$)'; then
+  echo "pre-commit: an Alpaca-style API key id appears in the staged changes"; fail=1
+fi
+if echo "$added" | grep -Eiq 'ALPACA_API_(KEY|SECRET)[[:space:]]*=[[:space:]]*["'"'"']?[A-Za-z0-9/+]{12,}'; then
+  echo "pre-commit: a value is assigned to ALPACA_API_KEY/SECRET in the staged changes"; fail=1
+fi
+if echo "$added" | grep -Eq '(sk-[A-Za-z0-9]{20,}|BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY)'; then
+  echo "pre-commit: a token/private key pattern appears in the staged changes"; fail=1
+fi
+if echo "$added" | grep -Eq 'C:\\Users\\|/Users/[A-Za-z]'; then
+  echo "pre-commit: an absolute personal path appears in the staged changes (use relative paths or <placeholders>)"; fail=1
+fi
+
+[ "$fail" -eq 0 ] || { echo "pre-commit: commit blocked."; exit 1; }
+exit 0
