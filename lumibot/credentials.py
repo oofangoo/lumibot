@@ -57,6 +57,7 @@ _BROKER_CLASS_NAMES = {
     "Tradovate",
     "Schwab",
     "Bitunix",
+    "Bitkub",
     "ProjectX",
     "Polymarket",
 }
@@ -508,6 +509,14 @@ BITUNIX_CONFIG = {
     "TRADING_MODE": os.environ.get("BITUNIX_TRADING_MODE", "FUTURES"), # Add TRADING_MODE, default to FUTURES
 }
 
+# Bitkub Configuration (Thai spot exchange). Market data needs no key; trading and balances do.
+BITKUB_CONFIG = {
+    "API_KEY": os.environ.get("BITKUB_API_KEY"),
+    "API_SECRET": os.environ.get("BITKUB_API_SECRET"),
+    "QUOTE_ASSET": os.environ.get("BITKUB_QUOTE_ASSET", "THB"),  # default quote currency: THB or USDT
+    "SYMBOLS": os.environ.get("BITKUB_SYMBOLS", ""),  # optional extra markets (e.g. "BTC_THB,ETH_THB") to poll for open orders
+}
+
 # ProjectX URL mappings - REST API base URLs (v2 gateway URLs preferred)
 PROJECTX_BASE_URLS = {
     "topstepx": "https://api.topstepx.com/",
@@ -646,6 +655,8 @@ def _build_default_live_credentials():
             broker = _broker_class("Schwab")(SCHWAB_CONFIG, connect_stream=connect_stream)
         elif broker_name == "bitunix":
             broker = _broker_class("Bitunix")(BITUNIX_CONFIG, connect_stream=connect_stream)
+        elif broker_name == "bitkub":
+            broker = _broker_class("Bitkub")(BITKUB_CONFIG, connect_stream=connect_stream)
         elif broker_name in ("polymarket", "polymarket_clob"):
             from .data_sources import PolymarketData
 
@@ -759,6 +770,8 @@ def _build_default_live_credentials():
             broker = _broker_class("Ccxt")(WEEX_CONFIG, connect_stream=connect_stream)
         elif BITUNIX_CONFIG["API_KEY"] and BITUNIX_CONFIG["API_SECRET"]:
             broker = _broker_class("Bitunix")(BITUNIX_CONFIG, connect_stream=connect_stream)
+        elif BITKUB_CONFIG["API_KEY"] and BITKUB_CONFIG["API_SECRET"]:
+            broker = _broker_class("Bitkub")(BITKUB_CONFIG, connect_stream=connect_stream)
         elif get_available_projectx_firms():
             try:
                 available_firms = get_available_projectx_firms()
@@ -844,6 +857,12 @@ def _build_default_live_credentials():
 
                 data_source = BitunixData(BITUNIX_CONFIG)
                 if broker and broker.name.lower() == "bitunix" and hasattr(broker, "api"):
+                    data_source.client = broker.api
+            elif data_name == "bitkub":
+                from .data_sources import BitkubData
+
+                data_source = BitkubData(BITKUB_CONFIG)
+                if broker and broker.name.lower() == "bitkub" and hasattr(broker, "api"):
                     data_source.client = broker.api
             elif data_name == "projectx":
                 from .data_sources import ProjectXData
@@ -931,6 +950,8 @@ elif not is_backtesting or is_backtesting.lower() == "false":
             broker = _broker_class("Schwab")(SCHWAB_CONFIG, connect_stream=connect_stream)
         elif trading_broker_name.lower() == "bitunix":
             broker = _broker_class("Bitunix")(BITUNIX_CONFIG, connect_stream=connect_stream)
+        elif trading_broker_name.lower() == "bitkub":
+            broker = _broker_class("Bitkub")(BITKUB_CONFIG, connect_stream=connect_stream)
         elif trading_broker_name.lower() in ("polymarket", "polymarket_clob"):
             from .data_sources import PolymarketData
 
@@ -1054,6 +1075,8 @@ elif not is_backtesting or is_backtesting.lower() == "false":
             broker = _broker_class("Ccxt")(WEEX_CONFIG, connect_stream=connect_stream)
         elif BITUNIX_CONFIG["API_KEY"] and BITUNIX_CONFIG["API_SECRET"]:
             broker = _broker_class("Bitunix")(BITUNIX_CONFIG, connect_stream=connect_stream)
+        elif BITKUB_CONFIG["API_KEY"] and BITKUB_CONFIG["API_SECRET"]:
+            broker = _broker_class("Bitkub")(BITKUB_CONFIG, connect_stream=connect_stream)
         elif get_available_projectx_firms():
             try:
                 # Use first available ProjectX firm
@@ -1150,6 +1173,12 @@ elif not is_backtesting or is_backtesting.lower() == "false":
                 data_source = BitunixData(BITUNIX_CONFIG)
                 # If broker is also Bitunix, share the same client instance
                 if broker and broker.name.lower() == "bitunix" and hasattr(broker, "api"):
+                    data_source.client = broker.api
+            elif data_source_name.lower() == "bitkub":
+                from .data_sources import BitkubData
+                data_source = BitkubData(BITKUB_CONFIG)
+                # If broker is also Bitkub, share the same client instance
+                if broker and broker.name.lower() == "bitkub" and hasattr(broker, "api"):
                     data_source.client = broker.api
             elif data_source_name.lower() == "projectx":
                 from .data_sources import ProjectXData

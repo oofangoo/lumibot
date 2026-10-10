@@ -11,6 +11,7 @@ _RUNTIME_ENV_PREFIXES = (
     "ANTHROPIC_",
     "BACKTESTING_",
     "BINANCE_",
+    "BITKUB_",
     "BITUNIX_",
     "CCXT_",
     "COINBASE_",

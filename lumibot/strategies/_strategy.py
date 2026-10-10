@@ -813,6 +813,9 @@ class _Strategy:
 
         if quote_asset is _DEFAULT_QUOTE_ASSET:
             quote_asset = Asset(symbol="USD", asset_type="forex")
+            if getattr(self.broker, "name", None) == "bitkub":
+                # Bitkub has no USD markets: unless the strategy chose a quote asset, use the broker's (THB or USDT).
+                quote_asset = self.broker.get_quote_asset()
 
         self._quote_asset = quote_asset if self.broker.name != "bitunix" else Asset("USDT", Asset.AssetType.CRYPTO)
 
