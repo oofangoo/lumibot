@@ -4036,7 +4036,7 @@ class Strategy(_Strategy):
         dt : datetime.datetime or pandas.Timestamp
             The datetime of the marker. Default is the current datetime.
         plot_name : str
-            The name of the subplot to add the marker to. If "default_plot" (the default value) or None, the marker will be added to the main plot.
+            The name of the subplot to add the marker to. If "default_plot" (the default value) or None, the marker will be added to the main plot. A subplot whose name ends in "(log)" is drawn on a logarithmic y-axis.
         asset : Asset, optional
             The Asset object to associate with this marker. Indicators are almost always tied to specific assets,
             so if you have an asset object, you should pass it here. This enables proper multi-symbol charting
@@ -4216,7 +4216,7 @@ class Strategy(_Strategy):
         dt : datetime.datetime or pandas.Timestamp
             The datetime of the line. Default is the current datetime.
         plot_name : str
-            The name of the subplot to add the line to. If "default_plot" (the default value) or None, the line will be added to the main plot.
+            The name of the subplot to add the line to. If "default_plot" (the default value) or None, the line will be added to the main plot. A subplot whose name ends in "(log)", for example "BTC price (log)", is drawn on a logarithmic y-axis.
         asset : Asset, optional
             The Asset object to associate with this line. Indicators are almost always tied to specific assets,
             so if you have an asset object, you should pass it here. This enables proper multi-symbol charting

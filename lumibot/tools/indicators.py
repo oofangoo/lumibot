@@ -632,6 +632,11 @@ SAFE_COLOR_CYCLE = [
 _BLACK_VALUES = {"black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)"}
 
 
+def _plot_wants_log_axis(plot_name):
+    """True when a subplot's name ends in "(log)": the opt-in for a logarithmic y-axis (long price histories are unreadable on a linear one)."""
+    return isinstance(plot_name, str) and plot_name.strip().lower().endswith("(log)")
+
+
 # Strategy.add_line accepts "solid" / "dotted" / "dashed"; Plotly spells the last two "dot" / "dash".
 _PLOTLY_LINE_DASH = {"solid": "solid", "dotted": "dot", "dashed": "dash"}
 
@@ -1032,6 +1037,10 @@ def plot_indicators(
                     row=i,
                     col=1
                 )
+
+                # A subplot named "... (log)" is drawn on a logarithmic price axis (equal % moves look equal).
+                if _plot_wants_log_axis(plot_title):
+                    fig.update_yaxes(type="log", row=i, col=1)
 
                 # Add range selector and range slider to each subplot
                 fig.update_xaxes(

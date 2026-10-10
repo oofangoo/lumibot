@@ -496,6 +496,21 @@ def test_plot_indicators_lines_without_style_columns_keep_the_old_look(tmp_path,
     assert fig.data[0].line.dash is None and fig.data[0].line.width is None
 
 
+def test_plot_indicators_log_axis_is_opt_in_by_subplot_name(tmp_path, monkeypatch):
+    # A subplot named "... (log)" gets a logarithmic y-axis; every other subplot stays linear.
+    days = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"])
+    rows = []
+    for plot_name in ("Oscillator", "BTC price (log)"):
+        for day, value in zip(days, (10.0, 100.0, 1000.0)):
+            rows.append({"datetime": day, "name": "line", "value": value, "color": "blue", "style": "solid",
+                         "width": None, "detail_text": None, "plot_name": plot_name})
+    fig = _capture_indicator_figure(monkeypatch, pd.DataFrame(rows), tmp_path)
+
+    # subplots are ordered by name: row 1 "BTC price (log)", row 2 "Oscillator"
+    assert fig.layout.yaxis.title.text == "BTC price (log)" and fig.layout.yaxis.type == "log"
+    assert fig.layout.yaxis2.title.text == "Oscillator" and fig.layout.yaxis2.type != "log"
+
+
 def _make_strategy_stub():
     strat = Strategy.__new__(Strategy)
     strat._chart_markers_list = []
