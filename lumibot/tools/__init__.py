@@ -41,6 +41,7 @@ _SUBMODULES = {
     "alpaca_helpers",
     "bitunix_helpers",
     "bitkub_helpers",
+    "bitkub_history",
 }
 
 _NAME_TO_MODULE = {
