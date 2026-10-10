@@ -2500,7 +2500,7 @@ class BacktestingBroker(Broker):
             #############################
 
             # Get the OHLCV data for the asset if we're using the YAHOO, CCXT data source
-            if data_source_name in ["CCXT", "YAHOO", "ALPACA", "DATABENTO", "DATABENTO_POLARS"]:
+            if data_source_name in ["CCXT", "BITKUB", "YAHOO", "ALPACA", "DATABENTO", "DATABENTO_POLARS"]:
                 timeshift, execution_bar_kwargs = self._execution_bar_request(data_source_name)
                 ohlc = self.data_source.get_historical_prices(
                     asset=asset,
@@ -3397,9 +3397,10 @@ class BacktestingBroker(Broker):
         source = getattr(self, "data_source", None)
         source_name = data_source_name or str(getattr(source, "SOURCE", "") or "").upper()
         source_class_name = source.__class__.__name__ if source is not None else ""
-        if source_name in {"INTERACTIVEBROKERSREST", "CCXT"} or source_class_name in {
+        if source_name in {"INTERACTIVEBROKERSREST", "CCXT", "BITKUB"} or source_class_name in {
             "InteractiveBrokersRESTBacktesting",
             "CcxtBacktestingData",
+            "BitkubBacktestingData",
         }:
             return True
 
@@ -4726,8 +4727,8 @@ class BacktestingBroker(Broker):
         # completed bar. See tests/*_lookahead for regression coverage.
         timeshift = timedelta(minutes=-1)
         execution_bar_kwargs = {}
-        if data_source_name == "CCXT":
-            # Research history excludes the unclosed CCXT candle. Execution
+        if data_source_name in ("CCXT", "BITKUB"):
+            # Research history excludes the unclosed CCXT/Bitkub candle. Execution
             # alone requests the current interval to simulate its open/range.
             # The timestamp check below still rejects future/sparse-gap bars.
             bar_duration, _ = DataSourceBacktesting.convert_timestep_str_to_timedelta(
@@ -4788,7 +4789,7 @@ class BacktestingBroker(Broker):
         timestep = str(getattr(self.data_source, "_timestep", "minute"))
         source_name = str(getattr(self.data_source, "SOURCE", "") or "").upper()
         try:
-            if source_name in {"CCXT", "YAHOO", "ALPACA", "DATABENTO", "DATABENTO_POLARS"}:
+            if source_name in {"CCXT", "BITKUB", "YAHOO", "ALPACA", "DATABENTO", "DATABENTO_POLARS"}:
                 timeshift, kwargs = self._execution_bar_request(source_name)
                 bars = self.data_source.get_historical_prices(
                     asset=asset, length=1, quote=leg.quote, timeshift=timeshift, **kwargs

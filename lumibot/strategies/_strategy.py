@@ -2526,8 +2526,9 @@ class _Strategy:
 
                 self._benchmark_returns_df = df
 
-            # For data sources of type CCXT, benchmark_asset gets bechmark_asset from the CCXT backtest data source.
-            elif self.broker.data_source.SOURCE.upper() == "CCXT":
+            # For data sources of type CCXT (and Bitkub, which uses the same crypto model), the benchmark comes from the
+            # backtest data source itself.
+            elif self.broker.data_source.SOURCE.upper() in ("CCXT", "BITKUB"):
                 benchmark_asset = self._benchmark_asset
                 # If the benchmark asset is a string, then convert it to an Asset object
                 if isinstance(benchmark_asset, str):

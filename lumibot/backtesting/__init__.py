@@ -6,6 +6,7 @@ _NAME_TO_MODULE = {
     "AlpacaBacktesting": "alpaca_backtesting",
     "AlphaVantageBacktesting": "alpha_vantage_backtesting",
     "BacktestingBroker": "backtesting_broker",
+    "BitkubBacktesting": "bitkub_backtesting",
     "CcxtBacktesting": "ccxt_backtesting",
     "DataBentoDataBacktesting": "databento_backtesting",
     "DataBentoDataBacktestingPandas": "databento_backtesting_pandas",
