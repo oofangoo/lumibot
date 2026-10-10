@@ -40,6 +40,7 @@ _SUBMODULES = {
     "yahoo_helper",
     "alpaca_helpers",
     "bitunix_helpers",
+    "bitkub_helpers",
 }
 
 _NAME_TO_MODULE = {
