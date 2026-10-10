@@ -779,6 +779,24 @@ For crypto futures, you **must** use ``close_position()`` instead of ``submit_or
 
     Using ``submit_order()`` to "sell" a crypto future will open another position instead of closing!
 
+Spot Crypto (Bitkub)
+--------------------
+
+Trade Thai-baht spot markets. Crypto orders need a ``quote``; Bitkub supports market and limit orders only (no stop orders).
+
+.. code-block:: python
+
+    btc = Asset("BTC", asset_type=Asset.AssetType.CRYPTO)
+    thb = Asset("THB", asset_type=Asset.AssetType.FOREX)
+
+    price = self.get_last_price(btc, quote=thb)
+    if price is not None and self.get_cash() > 1000:
+        # A market buy spends THB computed from the current best ask, so you receive about 0.0001 BTC.
+        order = self.create_order(btc, 0.0001, "buy", order_type="market", quote=thb)
+        self.submit_order(order)
+
+See the :doc:`Bitkub guide <brokers.bitkub>` for how buy/sell amounts are converted.
+
 Futures (DataBento)
 -------------------
 

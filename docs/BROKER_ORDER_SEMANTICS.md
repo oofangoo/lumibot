@@ -167,6 +167,7 @@ This table is intentionally small and focuses on “closed session / no data” 
 | Tradovate | Futures | GTC orders placed outside active hours can appear as **Suspended** until conditions allow activation; indicates “accepted/held”, not necessarily rejected. | https://support.tradovate.com/s/article/Tradovate-Order-Statuses?language=en_US | Needs LumiBot `apitest` probes (Tradovate demo/live) |
 | ProjectX | Futures | Order placement API returns `{ success, errorCode, errorMessage }`; docs do not specify “market closed” behavior or which codes represent it. | https://gateway.docs.projectx.com/docs/api-reference/order/order-place/ | Needs LumiBot `apitest` probes (ProjectX demo/live) |
 | Coinbase | Crypto | Market orders buy/sell at “market price”; stop orders trigger based on **last trade price**. | https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/guides/orders | Needs LumiBot `apitest` probes for execution-price conventions (bid/ask vs trade) |
+| Bitkub | Crypto spot (THB/USDT) | Only market and limit orders; buy `amt` is quote currency to spend, sell `amt` is coin quantity; `rat` 0 means market; no stop orders. Trades 24/7. | https://github.com/bitkub/bitkub-official-api-docs (`rest-v3.md`) | Public data verified live 2026-10-10 (see `docs/BITKUB_BROKER.md`); private/trading endpoints need a keyed live check |
 
 ### Alpaca (equities)
 

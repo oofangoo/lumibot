@@ -439,7 +439,7 @@ TRADING_BROKER
 - Values (case-insensitive):
   - ``alpaca``, ``tradier``, ``ccxt``, ``coinbase``, ``kraken``, ``weex``
   - ``ib``, ``interactivebrokers``, ``ibrest``, ``interactivebrokersrest``
-  - ``tradovate``, ``schwab``, ``bitunix``, ``polymarket``, ``polymarket_clob``
+  - ``tradovate``, ``schwab``, ``bitkub``, ``bitunix``, ``polymarket``, ``polymarket_clob``
   - ``projectx`` / ``projectx-topstepx`` for TopstepX futures (via ProjectX)
 - Note: If not set, broker is auto-detected based on available credentials.
 
@@ -449,7 +449,7 @@ DATA_SOURCE
 - Purpose: Explicitly specify which data source to use.
 - Values (case-insensitive):
   - ``alpaca``, ``tradier``, ``polygon``, ``yahoo``, ``thetadata``, ``databento``
-  - ``ccxt``, ``coinbase``, ``kraken``, ``weex``, ``schwab``, ``bitunix``, ``projectx``, ``polymarket``, ``polymarket_clob``
+  - ``ccxt``, ``coinbase``, ``kraken``, ``weex``, ``schwab``, ``bitkub``, ``bitunix``, ``projectx``, ``polymarket``, ``polymarket_clob``
 - Note: If not set, uses broker's default data source.
 
 Alpaca broker
@@ -850,6 +850,29 @@ COINBASE_SANDBOX
 - Purpose: Use Coinbase sandbox environment.
 - Values: ``true`` / ``false``.
 - Default: ``false``.
+
+Bitkub broker
+-------------
+
+BITKUB_API_KEY / BITKUB_API_SECRET
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Purpose: Bitkub exchange API credentials. Market data (``BitkubData``) works without them; balances and trading need them.
+- Values: Create at Bitkub's API management page (**do not hardcode**). Leave the Deposit and Withdraw permissions unchecked.
+
+BITKUB_QUOTE_ASSET
+^^^^^^^^^^^^^^^^^^
+
+- Purpose: Default quote currency for Bitkub markets and balances.
+- Values: ``THB`` / ``USDT``.
+- Default: ``THB``.
+
+BITKUB_SYMBOLS
+^^^^^^^^^^^^^^
+
+- Purpose: Extra markets to poll for open orders. Bitkub lists open orders per market, and LumiBot already polls markets you hold or have traded.
+- Values: Comma-separated markets, for example ``BTC_THB,ETH_THB``.
+- Default: empty.
 
 Bitunix broker
 --------------

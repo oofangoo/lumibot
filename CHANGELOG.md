@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.6.18 - Unreleased
+
+### Added
+- Bitkub (Thai spot crypto, THB and USDT markets) broker and data source: `Bitkub` broker, `BitkubData`, `BitkubClient` REST helper, `BROKER=bitkub` / `DATA_SOURCE=bitkub` selection, and `BITKUB_API_KEY`, `BITKUB_API_SECRET`, `BITKUB_QUOTE_ASSET`, `BITKUB_SYMBOLS` environment variables. Market data needs no API key. Supports market and limit orders, cancel, balances and positions with REST polling; rejects stop/bracket/OCO/multi-leg orders explicitly because Bitkub has none. See `docsrc/brokers.bitkub.rst` and `docs/BITKUB_BROKER.md`.
+- Bitkub candle history keeps the most complete version of the conflicting duplicate rows the exchange returns for one timestamp, returns completed bars only, and never fills gaps.
+
+### Changed
+- Strategies running on the Bitkub broker default `quote_asset` to the broker's quote currency (THB/USDT) instead of USD, because Bitkub has no USD markets.
+
+### Notes
+- Bitkub private endpoints (balances, orders) are implemented from the official docs with deterministic tests and have not yet been validated against a live account; follow the checklist in `docs/BITKUB_BROKER.md` before trusting fills.
+
 ## 4.6.17 - 2026-10-10
 
 - Preserve Schwab rejection descriptions and fill callbacks recovered through direct order reconciliation, and preserve deferred broker error objects during synchronization. Account for unobserved partial fills before cancellation, reconcile cancel/fill races from authoritative order state, and retain increasing retry delays through immediately flapping stream logins. Clarify the Strategy API's GTC default and explicit DAY duration for intraday orders without changing intentional GTC orders.

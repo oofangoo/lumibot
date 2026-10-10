@@ -783,6 +783,7 @@ LumiBot supports the following brokers:
 - **Schwab** -- stocks, options (via Trader API)
 - **Tradovate** -- futures (CME Group markets)
 - **TopstepX (via ProjectX)** -- futures
+- **Bitkub** -- Thai spot crypto (THB and USDT markets; real money only, no paper mode)
 - **Bitunix** -- crypto futures
 - **Selected CCXT crypto paths** -- Coinbase, Kraken, and WEEX have auto-detected credential paths; KuCoin, Binance, and BitMEX have documented manual CCXT setup paths; Kraken, Binance, KuCoin, BitMEX, Bybit, and OKX have documented backtesting examples
 

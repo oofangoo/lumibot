@@ -39,6 +39,10 @@ There are several different brokers that you can use to trade with Lumibot, and 
      - Crypto spot, margin, or derivatives by exchange
      - Exchange API keys
      - :doc:`CCXT comparison <brokers.ccxt>`
+   * - Bitkub
+     - Thai spot crypto (THB and USDT markets)
+     - API key and secret (market data needs none)
+     - :doc:`Bitkub guide <brokers.bitkub>`
    * - Bitunix
      - USDT perpetual futures
      - API key and secret
@@ -71,6 +75,7 @@ Broker setup is easier on `BotSpot <https://botspot.trade/sales?showLogin=1&utm_
    :caption: Contents:
 
    brokers.alpaca
+   brokers.bitkub
    brokers.bitunix
    brokers.ccxt
    brokers.interactive_brokers

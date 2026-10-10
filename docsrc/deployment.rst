@@ -650,6 +650,30 @@ Charles Schwab provides API access for automated trading and market data through
      - Your Schwab account number used for trading.
      - 123456789
 
+Bitkub Configuration
+--------------------
+
+Bitkub is a Thai spot cryptocurrency exchange (THB and USDT markets). Market data needs no account; trading needs an API key from the `Bitkub API management <https://www.bitkub.com/en/api-management>`_ page. Bitkub has no paper-trading mode, so every order is a real order.
+
+.. list-table:: Bitkub Configuration
+   :widths: 25 50 25
+   :header-rows: 1
+
+   * - **Secret**
+     - **Description**
+     - **Example**
+   * - BITKUB_API_KEY
+     - Your Bitkub API key. **Required** if you are using Bitkub as your broker.
+     - your_api_key_here
+   * - BITKUB_API_SECRET
+     - Your Bitkub API secret. **Required** if you are using Bitkub as your broker.
+     - your_api_secret_here
+   * - BITKUB_QUOTE_ASSET
+     - **(Optional)** Default quote currency, ``THB`` or ``USDT``. Defaults to ``THB``.
+     - THB
+
+See the :doc:`Bitkub guide <brokers.bitkub>` for supported order types and safety notes.
+
 Bitunix Configuration
 ---------------------
 
