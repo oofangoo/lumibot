@@ -17,7 +17,7 @@ import json
 import math
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from lumibot.entities import Asset, Order
@@ -94,8 +94,13 @@ class TrendPortfolio(Strategy):
         if bars is None or len(bars.df) < sma + 1:
             return None
         df = bars.df
-        if not self.is_backtesting and df.index[-1].date() == self.get_datetime().date():
-            df = df.iloc[:-1]  # live: ignore today's still-forming bar (completed closes only, as in the backtests)
+        if not self.is_backtesting:
+            # live: completed daily bars only, as in the backtests. A bar is complete once its whole day has elapsed. (Comparing dates is
+            # wrong for crypto: LumiBot labels the BTC day bar 00:00 UTC = 20:00 ET of the PREVIOUS date, so the still-forming bar never
+            # matched "today" and every live BTC signal used a half-finished day. Verified with a probe on 2026-10-10.)
+            now = self.get_datetime()
+            now = now if df.index.tz is not None else now.replace(tzinfo=None)
+            df = df[[ts + timedelta(days=1) <= now for ts in df.index]]
         close = df["close"]
         if len(close) < sma:
             return None
