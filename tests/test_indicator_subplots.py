@@ -448,6 +448,54 @@ def test_plot_indicators_handles_nan_marker_size(tmp_path, monkeypatch):
     mock_write.assert_called_once()
 
 
+def _capture_indicator_figure(monkeypatch, lines_df, tmp_path):
+    """Run plot_indicators with the file write mocked out and return the Plotly figure it built."""
+    captured = {}
+
+    def fake_write_html(self, *args, **kwargs):
+        captured["fig"] = self
+
+    monkeypatch.setattr("plotly.graph_objects.Figure.write_html", fake_write_html)
+    plot_indicators(
+        plot_file_html=str(tmp_path / "plot.html"),
+        chart_markers_df=None,
+        chart_lines_df=lines_df,
+        strategy_name="Test",
+        show_indicators=True,
+    )
+    return captured["fig"]
+
+
+def test_plot_indicators_honors_line_style_and_width(tmp_path, monkeypatch):
+    # add_line(style=..., width=...) must reach the chart; before the fix every line drew thin and solid.
+    days = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"])
+    rows = []
+    for name, style, width in (("plain", "solid", None), ("sma", "dotted", 3), ("level", "dashed", 4), ("odd", "wavy", -1)):
+        for day in days:
+            rows.append({"datetime": day, "name": name, "value": 1.0, "color": "blue", "style": style,
+                         "width": width, "detail_text": None, "plot_name": "default_plot"})
+    fig = _capture_indicator_figure(monkeypatch, pd.DataFrame(rows), tmp_path)
+
+    lines = {trace.name: trace.line for trace in fig.data}
+    assert lines["plain"].dash == "solid" and lines["plain"].width is None
+    assert lines["sma"].dash == "dot" and lines["sma"].width == 3
+    assert lines["level"].dash == "dash" and lines["level"].width == 4
+    # an unknown style falls back to solid and a non-positive width is ignored
+    assert lines["odd"].dash == "solid" and lines["odd"].width is None
+    assert all(line.color == "blue" for line in lines.values())
+
+
+def test_plot_indicators_lines_without_style_columns_keep_the_old_look(tmp_path, monkeypatch):
+    # Frames written before style/width were plotted (or by other tools) have no such columns.
+    days = pd.to_datetime(["2024-01-01", "2024-01-02"])
+    lines_df = pd.DataFrame({"datetime": days, "name": "old", "value": [1.0, 2.0], "color": "red",
+                             "detail_text": None, "plot_name": "default_plot"})
+    fig = _capture_indicator_figure(monkeypatch, lines_df, tmp_path)
+
+    assert fig.data[0].line.color == "red"
+    assert fig.data[0].line.dash is None and fig.data[0].line.width is None
+
+
 def _make_strategy_stub():
     strat = Strategy.__new__(Strategy)
     strat._chart_markers_list = []

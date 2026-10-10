@@ -632,6 +632,32 @@ SAFE_COLOR_CYCLE = [
 _BLACK_VALUES = {"black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)"}
 
 
+# Strategy.add_line accepts "solid" / "dotted" / "dashed"; Plotly spells the last two "dot" / "dash".
+_PLOTLY_LINE_DASH = {"solid": "solid", "dotted": "dot", "dashed": "dash"}
+
+
+def _plotly_line_style(group_df, color):
+    """Plotly ``line`` settings for one named indicator line.
+
+    ``Strategy.add_line(style=..., width=...)`` has always validated and stored both values, but the plot only used the
+    colour, so dotted/dashed/thick lines all drew as thin solid ones. Rows written by older code (no ``style``/``width``
+    column, or empty values) keep the previous look: solid, Plotly's default width.
+    """
+    line = {"color": color}
+
+    if "style" in group_df.columns:
+        style = group_df["style"].dropna()
+        if not style.empty:
+            line["dash"] = _PLOTLY_LINE_DASH.get(str(style.iloc[0]).strip().lower(), "solid")
+
+    if "width" in group_df.columns:
+        width = pd.to_numeric(group_df["width"], errors="coerce").dropna()
+        if not width.empty and width.iloc[0] > 0:
+            line["width"] = float(width.iloc[0])
+
+    return line
+
+
 def _safe_color(raw_color, key_hint=""):
     """Return a color guaranteed to be visible against dark backgrounds."""
     if isinstance(raw_color, str):
@@ -877,6 +903,7 @@ def plot_indicators(
                     if "color" not in group_df.columns:
                         group_df = group_df.assign(color=None)
                     color = _safe_color(group_df["color"].iloc[0], f"{plot_name}:{line_name}")
+                    line_style = _plotly_line_style(group_df, color)
 
                     # Determine which subplot to use
                     row = plot_names.index(plot_name) + 1
@@ -888,7 +915,7 @@ def plot_indicators(
                             y=group_df["value"],
                             mode="lines",
                             name=line_name,
-                            line_color=color,
+                            line=line_style,
                             hovertemplate=f"{line_name}<br>%{{text}}<br>%{{x|%b %d %Y %I:%M:%S %p}}<extra></extra>",
                             text=group_df["detail_text"],
                         ),

@@ -11,6 +11,9 @@
 - The backtesting engine's CCXT-specific branches (execution-bar request, sub-day current-bar check, crypto benchmark) now also apply to the `BITKUB` data source.
 - Strategies running on the Bitkub broker default `quote_asset` to the broker's quote currency (THB/USDT) instead of USD, because Bitkub has no USD markets.
 
+### Fixed
+- The indicators plot (`plot_indicators`, written after a backtest) now draws `Strategy.add_line(style=..., width=...)`: `"dotted"` and `"dashed"` lines render as such and `width` is applied. Both arguments were validated and stored but ignored, so every line drew thin and solid. Lines without style/width data look as before.
+
 ### Notes
 - Bitkub private endpoints (balances, orders) are implemented from the official docs with deterministic tests and have not yet been validated against a live account; follow the checklist in `docs/BITKUB_BROKER.md` before trusting fills.
 
