@@ -100,6 +100,9 @@ class BitkubHistory:
             payload = self.client.get_tradingview_history(symbol, resolution, cursor, window_end - 1)
             frames.append(candles_frame(payload))
             cursor = window_end
+        frames = [
+            frame for frame in frames if len(frame)
+        ]  # empty windows (no trades) add nothing; skip them explicitly
         if not frames:
             return pd.DataFrame(columns=CANDLE_COLUMNS)
         return pd.concat(frames, ignore_index=True)
@@ -133,7 +136,7 @@ class BitkubHistory:
                         fetched.append(self._download(symbol, resolution, resume, want_end))
                     new_coverage = (new_from, new_to)
                 if fetched:
-                    parts = ([cached] if cached is not None and len(cached) else []) + fetched
+                    parts = [part for part in [cached, *fetched] if part is not None and len(part)]
                     merged = (
                         clean_candles(pd.concat(parts, ignore_index=True))
                         if parts

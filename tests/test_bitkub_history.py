@@ -197,3 +197,22 @@ def test_invalid_resolution_is_refused_before_any_request(tmp_path):
     with pytest.raises(ValueError):
         history(exchange, tmp_path, now=T0 + DAY).get("BTC_THB", "30", T0, T0 + DAY)
     assert exchange.calls == []
+
+
+def test_empty_and_mixed_windows_do_not_trigger_pandas_concat_warnings(tmp_path):
+    """A window with no trades next to windows with candles must merge cleanly (no pandas concat warnings)."""
+    import warnings
+
+    candles = [
+        c for c in daily(30) if not (10 <= (c["t"] - T0) // DAY < 20)
+    ]  # a 10-day hole in the middle of the history
+    exchange = FakeExchange(candles)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        frame = history(exchange, tmp_path, now=T0 + 100 * DAY, max_bars=10).get("BTC_THB", "1D", T0, T0 + 30 * DAY)
+        assert len(frame) == 20  # the empty middle chunk contributed nothing, and nothing was invented for it
+        assert (
+            history(FakeExchange([]), tmp_path / "other", now=T0 + 100 * DAY)
+            .get("BTC_THB", "1D", T0, T0 + 5 * DAY)
+            .empty
+        )
