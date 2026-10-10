@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Trading Desk</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --series: #2a78d6; --bench: #898781;
+    --up: #006300; --down: #d03b3b; --warn: #8a5a00; --wash: rgba(11,11,11,.04);
+    --crit-bg: rgba(208,59,59,.10); --warn-bg: rgba(138,90,0,.10); --info-bg: rgba(42,120,214,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --series: #3987e5; --bench: #898781;
+      --up: #0ca30c; --down: #ec6a6a; --warn: #fab219; --wash: rgba(255,255,255,.05);
+      --crit-bg: rgba(236,106,106,.14); --warn-bg: rgba(250,178,25,.12); --info-bg: rgba(57,135,229,.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --series: #3987e5; --bench: #898781;
+    --up: #0ca30c; --down: #ec6a6a; --warn: #fab219; --wash: rgba(255,255,255,.05);
+    --crit-bg: rgba(236,106,106,.14); --warn-bg: rgba(250,178,25,.12); --info-bg: rgba(57,135,229,.12);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1160px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  h2 { font-size: 13px; margin: 0 0 10px; color: var(--ink2); font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+  h2.sec { margin: 22px 0 8px; }
+  .badge { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; color: var(--ink2); margin-left: 8px; vertical-align: 2px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .grid { display: grid; gap: 14px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .cols3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cols2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .grid > .card { margin-bottom: 0; }
+  .kpi .v { font-size: 24px; font-weight: 650; margin: 2px 0; }
+  .kpi .s { color: var(--ink2); font-size: 12px; }
+  .up { color: var(--up); } .down { color: var(--down); } .mute { color: var(--muted); } .warn { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  .scroll { overflow-x: auto; }
+  .pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); }
+  .pill.warn { border-color: var(--warn); } .pill.crit { border-color: var(--down); color: var(--down); } .pill.good { border-color: var(--up); color: var(--up); }
+  .bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin: 6px 0 2px; position: relative; }
+  .bar > i { display: block; height: 100%; background: var(--series); border-radius: 3px; }
+  .bar > b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink2); }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .row span:first-child { color: var(--ink2); }
+  button, select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  select { background: var(--surface); }
+  button:hover { background: var(--wash); }
+  button[aria-pressed="true"] { background: var(--wash); font-weight: 600; }
+  .tools { display: flex; gap: 6px; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; }
+  .chartwrap { position: relative; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.15); display: none; white-space: nowrap; z-index: 2; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink2); margin-bottom: 4px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: 3px; margin-right: 5px; }
+  pre { margin: 0; font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow: auto; color: var(--ink2); }
+  .doc { max-height: 560px; overflow: auto; }
+  .doc h1, .doc h2, .doc h3 { text-transform: none; letter-spacing: 0; color: var(--ink); }
+  .doc h1 { font-size: 18px; } .doc h2 { font-size: 15px; margin-top: 18px; } .doc h3 { font-size: 14px; }
+  .doc code { background: var(--wash); padding: 0 4px; border-radius: 3px; font-size: 12px; }
+  .doc pre { background: var(--wash); padding: 8px; border-radius: 6px; }
+  .note { color: var(--ink2); font-size: 12px; margin-top: 8px; }
+  .err { color: var(--down); font-size: 12px; }
+  a { color: var(--series); }
+  .alerts { display: grid; gap: 6px; margin-bottom: 14px; }
+  .alert { border-radius: 8px; padding: 7px 12px; font-size: 13px; border: 1px solid var(--border); display: flex; gap: 10px; align-items: baseline; }
+  .alert b { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; min-width: 34px; }
+  .alert.crit { background: var(--crit-bg); border-color: var(--down); } .alert.crit b { color: var(--down); }
+  .alert.warn { background: var(--warn-bg); border-color: var(--warn); } .alert.warn b { color: var(--warn); }
+  .alert.info { background: var(--info-bg); } .alert.info b { color: var(--series); }
+  .alert.good { background: var(--wash); } .alert.good b { color: var(--up); }
+  .check { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--grid); align-items: baseline; }
+  .check:last-child { border-bottom: 0; }
+  .check .m { width: 18px; text-align: center; font-weight: 700; }
+  .check .t { flex: 1; } .check .t small { display: block; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Paper Trading Desk <span class="badge">PAPER · read-only</span> <span class="badge" id="mkt">market …</span> <span class="badge" id="codever" title="Commit the live bot is running">code …</span></h1></div>
+    <div class="meta"><span id="updated">loading…</span> · <button id="refresh" type="button">Refresh</button></div>
+  </header>
+
+  <div id="banner"></div>
+  <section class="alerts" id="alerts" aria-label="Alerts and checks"></section>
+  <section class="grid kpis" id="kpis" aria-label="Bot summary"></section>
+
+  <h2 class="sec">Bot performance since start (bot's own trades only)</h2>
+  <section class="card">
+    <div class="legend"><span><i style="background:var(--series)"></i>Bot value (budget + P&amp;L, after fees)</span><span><i style="background:var(--bench)"></i>Benchmark: same $ in SPY from the bot's first SPY buy</span></div>
+    <div class="chartwrap"><div id="chart1"></div><div class="tip" id="tip1"></div></div>
+    <div class="scroll" id="weeks" style="margin-top:12px"></div>
+    <div class="note" id="perfnote"></div>
+  </section>
+
+  <h2 class="sec">Strategy sleeves and protection (budget <span id="budget"></span>)</h2>
+  <section class="grid cols3" id="sleeves"></section>
+
+  <section class="grid cols2" style="margin-top:14px">
+    <div class="card"><h2>Paper → real-money checklist</h2><div id="gate"></div></div>
+    <div class="card"><h2>What the backtests promised vs what is happening</h2><div id="expect"></div></div>
+  </section>
+
+  <h2 class="sec">Account (whole paper account, includes non-bot positions)</h2>
+  <section class="card">
+    <div class="tools">
+      <h2 style="margin:0">Account equity, last 30 days</h2>
+      <span><button id="vChart" type="button" aria-pressed="true">Chart</button> <button id="vTable" type="button" aria-pressed="false">Table</button></span>
+    </div>
+    <div class="chartwrap" id="chart2wrap"><div id="chart2"></div><div class="tip" id="tip2"></div></div>
+    <div id="tbl" class="scroll" hidden></div>
+    <div class="note" id="weeknote"></div>
+    <h2 style="margin-top:16px">Positions</h2>
+    <div class="scroll" id="positions"></div>
+    <h2 style="margin-top:16px">Open orders (stops and pending trades)</h2>
+    <div class="scroll" id="orders"></div>
+    <h2 style="margin-top:16px">Order history (pre-bot orders are tagged "legacy")</h2>
+    <div class="scroll" id="ohist"></div>
+  </section>
+
+  <h2 class="sec">Automation health</h2>
+  <section class="grid cols2">
+    <div class="card">
+      <h2>Scheduled tasks</h2>
+      <div id="sched"></div>
+      <h2 style="margin-top:14px">Run history (every scheduled/manual run)</h2>
+      <div class="scroll" id="runs"></div>
+    </div>
+    <div class="card">
+      <div class="tools"><h2 style="margin:0">Bot decision log</h2>
+        <span><select id="logsel" aria-label="Choose log file"></select> <button id="logview" type="button">Open full log</button></span></div>
+      <pre id="log"></pre>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <div class="tools">
+      <h2 style="margin:0">Notes</h2>
+      <span><button data-doc="diary" aria-pressed="true" type="button">Diary</button> <button data-doc="experiments" aria-pressed="false" type="button">Experiments</button> <button data-doc="lumibot" aria-pressed="false" type="button">LumiBot notes</button></span>
+    </div>
+    <div class="doc" id="doc">loading…</div>
+  </section>
+  <p class="note">Everything here is read from your Alpaca <b>paper</b> account and local files. There are no trade buttons. Real-money trading is a separate decision that only you make (see Diary, "Rules agreed"). Bot value excludes dividends/interest and is reconstructed from fills plus daily closes.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const usd = (n, d = 2) => n == null ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
+const signed = (n, d = 2) => n == null ? '—' : (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
+const pct = (n, d = 2) => n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(d) + '%';
+const cls = n => n == null || Math.abs(n) < 0.005 ? 'mute' : n > 0 ? 'up' : 'down';
+const arrow = n => n == null || Math.abs(n) < 0.005 ? '' : n > 0 ? '▲ ' : '▼ ';
+const fmtT = (iso, tz) => iso ? new Date(iso).toLocaleString(undefined, {weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz, timeZoneName: 'short'}) : '—';
+const dayT = d => new Date(d + 'T12:00:00').getTime();
+const isErr = x => x && x.error;
+let DATA = null, VIEW = 'chart', DOC = 'diary';
+
+async function load() {
+  try {
+    const r = await fetch('/api/status', {cache: 'no-store'});
+    DATA = await r.json();
+    $('#banner').innerHTML = '';
+    render();
+  } catch (e) {
+    $('#banner').innerHTML = `<div class="card err">Can't reach the dashboard server (${esc(e.message)}). Is it still running? Start it with start-dashboard.ps1.</div>`;
+  }
+}
+function sect(x, fn) { return isErr(x) ? `<div class="err">${esc(x.error)}</div>` : fn(x); }
+
+function render() {
+  const d = DATA;
+  $('#updated').textContent = 'Updated ' + new Date(d.now).toLocaleTimeString() + ` (${d.took_ms} ms)`;
+  $('#budget').textContent = usd(d.budget, 0);
+  const c = d.clock;
+  $('#mkt').innerHTML = isErr(c) ? 'market ?' : c.is_open ? '<span class="up">US market open</span>' : `US market closed · opens ${fmtT(c.next_open, 'America/New_York').replace(/ E[SD]T/, ' ET')}`;
+  const cv = d.code || {};
+  $('#codever').innerHTML = !cv.tracked ? '<span class="warn">code: not in git</span>' : `code: ${esc(cv.describe || cv.commit)}${cv.dirty && cv.dirty.length ? ' <span class="warn">+uncommitted</span>' : ''}`;
+  $('#codever').title = cv.tracked ? `${cv.branch} @ ${cv.commit}: ${cv.subject}` : '';
+  renderAlerts(); renderKpis(); renderPerf(); renderSleeves(); renderGate(); renderExpect(); renderAccount(); renderSched();
+}
+
+function renderAlerts() {
+  const A = DATA.alerts || [], lab = {crit: 'FIX', warn: 'WATCH', info: 'INFO'};
+  const crit = A.filter(a => a.level === 'crit').length, warn = A.filter(a => a.level === 'warn').length;
+  const head = !A.length || (!crit && !warn) ? `<div class="alert good"><b>OK</b><span>No problems detected: stops in place, tasks healthy, signals consistent with holdings.</span></div>` : '';
+  $('#alerts').innerHTML = head + A.map(a => `<div class="alert ${a.level}"><b>${lab[a.level]}</b><span>${esc(a.msg)}</span></div>`).join('');
+}
+
+function renderKpis() {
+  const d = DATA, a = d.account, p = d.bot_perf;
+  const k = [];
+  if (isErr(p) || !p || !p.points || !p.points.length) k.push(`<div class="card kpi"><h2>Bot value</h2><div class="v">—</div><div class="s">${esc((p && (p.error || p.note)) || 'no fills yet')}</div></div>`);
+  else {
+    const wk = p.weeks.length ? p.weeks[p.weeks.length - 1] : null, rel = p.pnl - p.spy_pnl;
+    k.push(`<div class="card kpi"><h2>Bot value</h2><div class="v">${usd(p.nav, 0)}</div><div class="s">budget ${usd(d.budget, 0)} · after fees</div></div>`);
+    k.push(`<div class="card kpi"><h2>Bot P&amp;L since start</h2><div class="v ${cls(p.pnl)}">${arrow(p.pnl)}${signed(p.pnl)}</div><div class="s ${cls(p.pnl)}">${pct(p.pnl_pct)} · ${p.n_fills} fills</div></div>`);
+    k.push(`<div class="card kpi"><h2>vs SPY buy &amp; hold</h2><div class="v ${cls(rel)}">${arrow(rel)}${signed(rel, 0)}</div><div class="s">SPY would be ${signed(p.spy_pnl, 0)}</div></div>`);
+    k.push(`<div class="card kpi"><h2>This week (bot)</h2><div class="v ${cls(wk && wk.pnl)}">${wk ? arrow(wk.pnl) + signed(wk.pnl, 0) : '—'}</div><div class="s">goal ≥ ${usd(d.expect.goal_wk, 0)}/week · backtest avg ${usd(d.expect.wk_avg, 0)}</div></div>`);
+    k.push(`<div class="card kpi"><h2>Bot max drawdown</h2><div class="v ${p.max_dd_pct < -10 ? 'down' : ''}">${p.max_dd_pct.toFixed(2)}%</div><div class="s">limit about ${d.expect.maxdd}% (backtest)</div></div>`);
+  }
+  if (isErr(a)) k.push(`<div class="card err">${esc(a.error)}</div>`);
+  else k.push(`<div class="card kpi"><h2>Account equity</h2><div class="v">${usd(a.equity, 0)}</div><div class="s">${esc(a.status)} · cash ${usd(a.cash, 0)} · today <span class="${cls(a.day_change)}">${signed(a.day_change, 0)}</span></div></div>`);
+  $('#kpis').innerHTML = k.join('');
+}
+
+/* ---- generic line chart: shared x points, hairline grid, hover crosshair + tooltip ---- */
+function lineChart(box, tip, series, fmtY, label) {
+  const pts0 = series[0].pts;
+  if (!pts0 || pts0.length < 2) { box.innerHTML = '<div class="mute">Not enough history yet: the chart fills in as days pass.</div>'; return; }
+  const W = box.clientWidth || 600, H = 230, m = {l: 62, r: 14, t: 10, b: 26};
+  const xs = pts0.map(p => p[0]), all = series.flatMap(s => s.pts.map(p => p[1]));
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = (hi - lo || hi * 0.01 || 1) * 0.18; lo -= pad; hi += pad;
+  const X = t => m.l + (t - xs[0]) / (xs[xs.length - 1] - xs[0] || 1) * (W - m.l - m.r);
+  const Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  let svg = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(label)}">`;
+  for (let i = 0; i <= 3; i++) { const v = lo + (hi - lo) * i / 3, y = Y(v); svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtY(v)}</text>`; }
+  const tickIdx = xs.length <= 5 ? xs.map((_, i) => i) : [0, 1, 2, 3].map(i => Math.round((xs.length - 1) * i / 3));  // few points: label each; else 4 even labels
+  tickIdx.forEach((ix, k) => { svg += `<text x="${X(xs[ix])}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === tickIdx.length - 1 ? 'end' : 'middle'}" font-size="11" fill="var(--muted)">${new Date(xs[ix]).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</text>`; });
+  svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
+  series.forEach(s => {
+    svg += `<polyline fill="none" stroke="${s.color}" stroke-width="${s.w || 2}" ${s.dash ? 'stroke-dasharray="5 4"' : ''} stroke-linejoin="round" stroke-linecap="round" points="${s.pts.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}"/>`;
+    const l = s.pts[s.pts.length - 1]; svg += `<circle cx="${X(l[0])}" cy="${Y(l[1])}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`;
+  });
+  svg += `<g class="hov" style="display:none"><line class="hl" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)"/></g><rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
+  box.innerHTML = svg;
+  const hov = $('.hov', box), hl = $('.hl', box);
+  const move = ev => {
+    const r = box.getBoundingClientRect(), mx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    let bi = 0, bd = Infinity; xs.forEach((t, i) => { const dd = Math.abs(X(t) - mx); if (dd < bd) { bd = dd; bi = i; } });
+    const x = X(xs[bi]); hov.style.display = ''; hl.setAttribute('x1', x); hl.setAttribute('x2', x);
+    tip.innerHTML = `<span class="mute">${new Date(xs[bi]).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'})}</span>` +
+      series.map(s => `<br><span style="color:${s.color}">●</span> ${esc(s.name)}: <b>${fmtY(s.pts[bi][1], true)}</b>`).join('');
+    tip.style.display = 'block'; const tw = tip.offsetWidth; tip.style.left = Math.min(Math.max(x - tw / 2, 0), W - tw) + 'px'; tip.style.top = '4px';
+  };
+  const hit = $('.hit', box); hit.addEventListener('mousemove', move); hit.addEventListener('touchmove', move, {passive: true});
+  hit.addEventListener('mouseleave', () => { hov.style.display = 'none'; tip.style.display = 'none'; });
+}
+const tickK = (v, full) => full ? usd(v) : '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(2) + 'k' : v.toFixed(0));
+
+function renderPerf() {
+  const p = DATA.bot_perf, e = DATA.expect;
+  if (isErr(p) || !p || !p.points || !p.points.length) { $('#chart1').innerHTML = `<div class="mute">${esc((p && (p.error || p.note)) || 'No bot fills yet.')}</div>`; $('#weeks').innerHTML = ''; $('#perfnote').textContent = ''; return; }
+  lineChart($('#chart1'), $('#tip1'), [
+    {name: 'Bot value', color: 'var(--series)', pts: p.points.map(q => [dayT(q.d), q.nav])},
+    {name: 'SPY benchmark', color: 'var(--bench)', dash: true, w: 1.6, pts: p.points.map(q => [dayT(q.d), q.spy])}], tickK, 'Bot value versus SPY benchmark');
+  $('#weeks').innerHTML = `<table><thead><tr><th>Week of</th><th>Bot P&amp;L</th><th>Bot value at end</th><th>SPY benchmark P&amp;L</th><th>vs goal ($${e.goal_wk}/wk)</th><th>vs backtest avg ($${e.wk_avg}/wk)</th></tr></thead><tbody>${p.weeks.slice().reverse().map(w =>
+    `<tr><td>${new Date(w.monday + 'T12:00:00').toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}${w.in_progress ? ' <span class="pill">in progress</span>' : ''}</td><td class="${cls(w.pnl)}">${arrow(w.pnl)}${signed(w.pnl, 0)}</td><td>${usd(w.end_nav, 0)}</td><td class="${cls(w.spy_pnl)}">${signed(w.spy_pnl, 0)}</td><td class="${cls(w.pnl - e.goal_wk)}">${w.in_progress ? '<span class="mute">—</span>' : signed(w.pnl - e.goal_wk, 0)}</td><td class="${cls(w.pnl - e.wk_avg)}">${w.in_progress ? '<span class="mute">—</span>' : signed(w.pnl - e.wk_avg, 0)}</td></tr>`).join('')}</tbody></table>`;
+  $('#perfnote').innerHTML = `${p.n_full_weeks ? `Average over ${p.n_full_weeks} completed week(s): <b class="${cls(p.avg_full_week)}">${signed(p.avg_full_week, 0)}/week</b>. ` : 'No completed week yet. '}A single week says almost nothing: the backtest median week was only about ${usd(e.wk_med, 0)} and many weeks are flat or negative. Judge over 4-8 weeks.${p.truncated ? ' <span class="warn">Order history was truncated at 500 orders; numbers may be incomplete.</span>' : ''}`;
+}
+
+function renderSleeves() {
+  const d = DATA, sig = d.signals || {}, prot = Array.isArray(d.protection) ? d.protection : [], gs = d.group_state || {};
+  $('#sleeves').innerHTML = d.targets.map(t => {
+    const s = isErr(sig) ? {error: sig.error} : sig[t.sleeve], g = gs[t.group] || {};
+    const pr = prot.find(x => x.symbol === t.symbol), st = g.sleeves ? g.sleeves[t.sleeve] : null;
+    const held = t.held + (t.safe_held || 0), fill = Math.min(100, held / t.target * 100);
+    let trend = '<span class="mute">no signal</span>', detail = '';
+    if (s && s.error) trend = `<span class="err">${esc(s.error)}</span>`;
+    else if (s) {
+      trend = s.on ? '<span class="up">▲ Trend ON</span> <span class="mute">hold ' + esc(t.symbol) + '</span>' : '<span class="down">▼ Trend OFF</span> <span class="mute">' + (t.safe ? 'hold ' + esc(t.safe) : 'hold cash') + '</span>';
+      detail = `<div class="row"><span>Last close (${esc(s.bar)}) <span class="mute">${esc(s.src || '')}</span></span><span>${usd(s.last)}</span></div>
+                <div class="row"><span>${s.sma_days}-day average</span><span>${usd(s.sma)}</span></div>
+                <div class="row"><span>Distance from average</span><span class="${Math.abs(s.pct_from_sma) < 2 ? 'warn' : cls(s.pct_from_sma)}">${pct(s.pct_from_sma)}${Math.abs(s.pct_from_sma) < 2 ? ' · near flip' : ''}</span></div>`;
+    }
+    const stopRow = pr ? `<div class="row"><span>Stop (8% below entry)</span><span>${usd(pr.stop)}${pr.limit ? ' <span class="mute">limit ' + usd(pr.limit) + '</span>' : ''}</span></div>
+        <div class="row"><span>Price falls to trigger</span><span>${pr.drop_to_stop_pct == null ? '—' : '-' + pr.drop_to_stop_pct.toFixed(1) + '%'}</span></div>
+        <div class="row"><span>Protection</span><span>${pr.status === 'protected' ? '<span class="pill good">✓ protected</span>' : `<span class="pill crit">${pr.status.toUpperCase()} (${(pr.coverage * 100).toFixed(0)}%)</span>`}</span></div>`
+      : `<div class="row"><span>Stop</span><span class="mute">${held > 200 && t.symbol !== 'SHV' ? '<span class="down">none</span>' : 'not holding a risk position'}</span></div>`;
+    const halt = g.hwm ? `<div class="row"><span>Drawdown halt (${t.group})</span><span>${g.halted ? '<span class="pill crit">ACTIVE</span>' : '<span class="mute">' + g.headroom_pct.toFixed(0) + '% headroom</span>'}</span></div>` : '';
+    return `<div class="card"><h2>${esc(t.sleeve)} · ${(t.weight * 100).toFixed(0)}%</h2>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px">${trend}</div>${detail}
+      <div class="row"><span>Target / held</span><span>${usd(t.target, 0)} / ${usd(held, 0)}</span></div>
+      <div class="bar" role="img" aria-label="${fill.toFixed(0)} percent of target filled"><i style="width:${fill}%"></i></div>
+      ${stopRow}${halt}
+      ${st && st.stopped ? '<div class="warn" style="margin-top:6px">⚠ Stopped out — sitting out until the trend resets</div>' : ''}
+      ${g.rebalance_due ? '<div class="mute" style="margin-top:4px">Monthly rebalance due on the next run</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderGate() {
+  const d = DATA, e = d.expect, p = d.bot_perf, rh = d.run_history || {};
+  const days = (new Date(d.now) - new Date(d.bot_start)) / 86400000, wks = days / 7;
+  const prot = Array.isArray(d.protection) ? d.protection : [], protOk = prot.length > 0 && prot.every(x => x.status === 'protected');
+  const crit = (d.alerts || []).filter(a => a.level === 'crit').length;
+  const runs = (rh.ok || 0) + (rh.failed || 0);
+  const full = p && p.n_full_weeks ? p.n_full_weeks : 0;
+  const mk = (st, title, sub) => `<div class="check"><span class="m ${st === 1 ? 'up' : st === -1 ? 'down' : 'mute'}">${st === 1 ? '✓' : st === -1 ? '✗' : '…'}</span><span class="t">${title}<small>${sub}</small></span></div>`;
+  const items = [
+    mk(wks >= e.min_weeks ? 1 : 0, `Paper time: ${wks.toFixed(1)} of ${e.min_weeks}-${e.ideal_weeks} weeks`, `Earliest sensible review ${e.earliest_review}; ideal ${e.ideal_review}. <span class="bar" style="display:block"><i style="width:${Math.min(100, wks / e.ideal_weeks * 100)}%"></i><b style="left:${e.min_weeks / e.ideal_weeks * 100}%"></b></span>`),
+    mk(runs && !rh.failed ? 1 : rh.failed ? -1 : 0, `Runs without errors: ${rh.ok || 0} ok / ${rh.failed || 0} failed`, 'From logs/run_status.csv (includes manual test runs). Needs real scheduled runs across a rebalance month-end and at least one trend flip to be convincing.'),
+    mk(protOk ? 1 : -1, 'Every risk position has a resting stop', protOk ? 'Verified live against Alpaca open orders.' : 'See the red alerts above.'),
+    mk(crit ? -1 : 1, 'No critical alerts', crit ? `${crit} critical alert(s) open.` : 'Nothing needs fixing right now.'),
+    mk(full >= e.min_weeks ? (p.avg_full_week >= e.goal_wk ? 1 : -1) : 0, `Average weekly P&L ≥ $${e.goal_wk} over ≥ ${e.min_weeks} weeks`, full ? `Currently ${signed(p.avg_full_week, 0)}/week over ${full} week(s).` : 'No completed week yet.'),
+    mk(p && p.max_dd_pct != null && p.max_dd_pct > e.maxdd ? (full >= e.min_weeks ? 1 : 0) : -1, `Drawdown inside the ${e.maxdd}% limit`, p ? `Bot max drawdown so far ${p.max_dd_pct.toFixed(2)}%.` : ''),
+  ];
+  $('#gate').innerHTML = items.join('') + `<div class="note"><b>Going to real money is your decision, never the bot's.</b> If you do, start with a small fraction of the capital.</div>`;
+}
+
+function renderExpect() {
+  const d = DATA, e = d.expect, p = d.bot_perf;
+  const row = (a, b, c) => `<tr><td>${a}</td><td>${b}</td><td>${c}</td></tr>`;
+  $('#expect').innerHTML = `<table><thead><tr><th>Measure</th><th>Backtest (2021-06+)</th><th>Paper so far</th></tr></thead><tbody>
+    ${row('Return per year', e.cagr + '%', '<span class="mute">too early</span>')}
+    ${row('Worst drawdown', e.maxdd + '%', p && p.max_dd_pct != null ? p.max_dd_pct.toFixed(2) + '%' : '—')}
+    ${row('Avg week', usd(e.wk_avg, 0), p && p.avg_full_week != null ? signed(p.avg_full_week, 0) : '<span class="mute">no full week</span>')}
+    ${row('Median week', usd(e.wk_med, 0), '<span class="mute">needs ≥ 4 weeks</span>')}
+    ${row('Sharpe', e.sharpe, '<span class="mute">too early</span>')}</tbody></table>
+    <div class="note">Honest caveats from the experiment log: BTC's 2015-2025 run flatters the long backtest; the 8% stop on BTC is unproven; the trend filter did not help in 2022 (stocks and bonds fell together). The −24% drawdown is a best case, not a ceiling (QQQ's filter alone fell −56% from 1999).</div>`;
+}
+
+function renderAccount() {
+  const d = DATA;
+  renderAcctChart();
+  $('#positions').innerHTML = sect(d.positions, ps => ps.length ? `<table><thead><tr><th>Symbol</th><th>Qty</th><th>Avg entry</th><th>Price</th><th>Value</th><th>Open P&amp;L</th><th>Owner</th></tr></thead><tbody>${ps.map(p =>
+    `<tr><td>${esc(p.symbol)}</td><td>${p.qty}</td><td>${usd(p.avg_entry)}</td><td>${usd(p.price)}</td><td>${usd(p.value, 0)}</td><td class="${cls(p.pl)}">${arrow(p.pl)}${signed(p.pl)} (${pct((p.plpc || 0) * 100)})</td><td>${p.bot ? '<span class="pill">Bot</span>' : '<span class="pill warn">Not the bot’s</span>'}</td></tr>`).join('')}</tbody></table>` : '<div class="mute">No positions.</div>');
+  $('#orders').innerHTML = sect(d.orders, os => os.length ? `<table><thead><tr><th>Symbol</th><th>Side</th><th>Type</th><th>Qty</th><th>Stop</th><th>Limit</th><th>Time in force</th><th>Status</th></tr></thead><tbody>${os.map(o =>
+    `<tr><td>${esc(o.symbol)}${o.bot ? '' : ' <span class="mute">(not bot)</span>'}</td><td>${esc(o.side)}</td><td>${esc(o.type)}</td><td>${o.qty ?? '—'}</td><td>${o.stop ? usd(o.stop) : '—'}</td><td>${o.limit ? usd(o.limit) : '—'}</td><td>${esc(o.tif)}</td><td>${esc(o.status)}</td></tr>`).join('')}</tbody></table>` : '<div class="mute">No open orders.</div>');
+  $('#ohist').innerHTML = sect(d.order_history, hs => hs.length ? `<table><thead><tr><th>Created</th><th>Symbol</th><th>Side</th><th>Type</th><th>Class</th><th>Qty</th><th>Fill</th><th>Status</th><th>Source</th></tr></thead><tbody>${hs.map(o =>
+    `<tr><td>${o.created ? new Date(o.created).toLocaleString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : '—'}</td><td>${esc(o.symbol)}</td><td>${esc(o.side)}</td><td>${esc(o.type)}</td><td>${esc(o.klass)}${o.legs ? ' (' + o.legs + ' legs)' : ''}</td><td>${o.qty ?? '—'}</td><td>${o.fill ? usd(o.fill) : '—'}</td><td>${esc(o.status)}</td><td>${o.legacy ? '<span class="pill warn">legacy</span>' : o.bot ? '<span class="pill">bot</span>' : '<span class="pill warn">manual / other</span>'}</td></tr>`).join('')}</tbody></table>` : '<div class="mute">No orders yet.</div>');
+}
+
+function renderAcctChart() {
+  const h = DATA.history, box = $('#chart2'), tbl = $('#tbl');
+  $('#weeknote').textContent = '';
+  if (!Array.isArray(h) || h.length < 2) { box.innerHTML = `<div class="mute">${h && h.error ? esc(h.error) : 'Not enough history yet.'}</div>`; tbl.hidden = true; return; }
+  const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  const base = h.find(p => p.t * 1000 >= mon.getTime()) || h[0], last = h[h.length - 1], wk = last.equity - base.equity;
+  $('#weeknote').innerHTML = `This week so far (whole account, incl. non-bot positions and the pre-bot legacy trades): <b class="${cls(wk)}">${arrow(wk)}${signed(wk, 0)}</b>. For the bot alone, use the performance section above.`;
+  tbl.hidden = VIEW !== 'table'; $('#chart2wrap').hidden = VIEW === 'table';
+  tbl.innerHTML = `<table><thead><tr><th>Date</th><th>Equity</th><th>Change</th></tr></thead><tbody>${h.slice().reverse().map((p, i, arr) => { const prev = arr[i + 1]; const ch = prev ? p.equity - prev.equity : null; return `<tr><td>${new Date(p.t * 1000).toLocaleDateString()}</td><td>${usd(p.equity)}</td><td class="${cls(ch)}">${ch == null ? '—' : arrow(ch) + signed(ch)}</td></tr>`; }).join('')}</tbody></table>`;
+  if (VIEW === 'table') return;
+  lineChart(box, $('#tip2'), [{name: 'Account equity', color: 'var(--series)', pts: h.map(p => [p.t * 1000, p.equity])}], tickK, 'Account equity over the last 30 days');
+}
+
+function renderSched() {
+  const s = DATA.scheduler, rh = DATA.run_history || {};
+  let h;
+  if (isErr(s)) h = `<div class="err">${esc(s.error)}</div>`;
+  else h = (s.tasks || []).map(t => {
+    const never = !t.last, disabled = t.state === 'Disabled', old = t.name === 'LumibotTrendPortfolio-PAPER';
+    const resultTxt = never ? 'not run yet' : (t.result === 0 ? '<span class="up">▲ OK (0)</span>' : `<span class="down">▼ code ${t.result}</span>`);
+    const mins = Math.round((new Date(t.next) - new Date()) / 60000);
+    const inTxt = mins > 0 ? (mins >= 1440 ? Math.floor(mins / 1440) + 'd ' + Math.floor((mins % 1440) / 60) + 'h' : mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + 'm') : 'now/overdue';
+    return `<div style="margin-bottom:10px"><div style="font-weight:600">${esc(t.name)} <span class="pill ${(old && !disabled) ? 'crit' : disabled ? 'warn' : ''}">${esc(t.state)}</span></div>
+       ${disabled ? `<div class="mute">${old ? 'old runner, kept as fallback (must stay disabled)' : 'disabled: not running'}</div>` : `<div class="row"><span>Next run</span><span>${fmtT(t.next)} (in ${inTxt})</span></div>
+       <div class="row"><span>&nbsp;</span><span class="mute">${fmtT(t.next, 'America/New_York')}</span></div>`}
+       <div class="row"><span>Last scheduler run / result</span><span>${never ? 'never' : fmtT(t.last)} · ${resultTxt}</span></div></div>`;
+  }).join('');
+  $('#sched').innerHTML = h;
+  $('#runs').innerHTML = (rh.rows || []).length ? `<table><thead><tr><th>Started</th><th>Group</th><th>Exit</th><th>Seconds</th><th>Code</th></tr></thead><tbody>${rh.rows.map(r =>
+    `<tr><td>${esc(r.start)}</td><td>${esc(r.group)}</td><td class="${r.exit_code === '0' ? 'up' : 'down'}">${r.exit_code === '0' ? '▲ 0' : '▼ ' + esc(r.exit_code)}</td><td>${esc(r.seconds)}</td><td class="${/dirty/.test(r.code || '') ? 'warn' : 'mute'}">${esc(r.code || '—')}</td></tr>`).join('')}</tbody></table>` : '<div class="mute">No runs logged yet.</div>';
+  if (!LOGFULL) { $('#log').textContent = (DATA.log || []).join('\n') || '(no decisions logged yet)'; const lg = $('#log'); lg.scrollTop = lg.scrollHeight; }
+}
+
+let LOGFULL = false;
+async function fillLogSelect() {
+  const names = await (await fetch('/api/logs')).json();
+  $('#logsel').innerHTML = '<option value="">Recent decisions (all bots)</option>' + names.map(n => `<option>${esc(n)}</option>`).join('');
+}
+$('#logsel').onchange = async () => {
+  const n = $('#logsel').value; LOGFULL = !!n;
+  $('#log').textContent = n ? await (await fetch('/api/logfile?name=' + encodeURIComponent(n))).text() : (DATA.log || []).join('\n');
+  const lg = $('#log'); lg.scrollTop = lg.scrollHeight;
+};
+$('#logview').onclick = () => { const n = $('#logsel').value; if (n) window.open('/api/logfile?name=' + encodeURIComponent(n), '_blank'); };
+
+async function loadDoc() {
+  const t = await (await fetch('/api/doc?name=' + DOC)).text();
+  $('#doc').innerHTML = window.marked ? marked.parse(t) : `<pre>${esc(t)}</pre>`;
+}
+$('#refresh').onclick = load;
+$('#vChart').onclick = () => { VIEW = 'chart'; $('#vChart').setAttribute('aria-pressed', 'true'); $('#vTable').setAttribute('aria-pressed', 'false'); if (DATA) renderAcctChart(); };
+$('#vTable').onclick = () => { VIEW = 'table'; $('#vTable').setAttribute('aria-pressed', 'true'); $('#vChart').setAttribute('aria-pressed', 'false'); if (DATA) renderAcctChart(); };
+document.querySelectorAll('[data-doc]').forEach(b => b.onclick = () => { DOC = b.dataset.doc; document.querySelectorAll('[data-doc]').forEach(x => x.setAttribute('aria-pressed', x === b)); loadDoc(); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (DATA) { renderPerf(); renderAcctChart(); } }, 150); });
+load(); loadDoc(); fillLogSelect(); setInterval(load, 30000);
+</script>
+</body>
+</html>
