@@ -4,6 +4,7 @@ from importlib import import_module as _import_module
 
 _NAME_TO_MODULE = {
     "Alpaca": "alpaca",
+    "Bitkub": "bitkub",
     "Bitunix": "bitunix",
     "Broker": "broker",
     "LumibotBrokerAPIError": "broker",
