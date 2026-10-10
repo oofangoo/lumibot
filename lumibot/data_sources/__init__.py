@@ -5,6 +5,7 @@ from importlib import import_module as _import_module
 _NAME_TO_MODULE = {
     "AlpacaData": "alpaca_data",
     "AlphaVantageData": "alpha_vantage_data",
+    "BitkubData": "bitkub_data",
     "BitunixData": "bitunix_data",
     "CcxtBacktestingData": "ccxt_backtesting_data",
     "CcxtData": "ccxt_data",
