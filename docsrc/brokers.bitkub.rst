@@ -44,9 +44,9 @@ How to Use Bitkub
    * - Live order updates
      - Polling
      - REST polling every 5 seconds (WebSocket streaming is not implemented)
-   * - Backtesting data source
-     - Not included
-     - ``BitkubData`` is a live data source
+   * - Backtesting
+     - Supported
+     - ``BitkubBacktesting`` uses real Bitkub candles (see :doc:`Bitkub backtesting <backtesting.bitkub>`)
 
 Account and API Key
 -------------------

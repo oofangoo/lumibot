@@ -43,6 +43,10 @@ interval:
      - :doc:`Alpaca <backtesting.alpaca>`
      - Minute and daily
      - Alpaca API key (free accounts include option history from about February 2024)
+   * - Thai spot crypto (THB or USDT) on Bitkub
+     - :doc:`Bitkub <backtesting.bitkub>`
+     - Minute, hour, and daily
+     - No API key; history is public and cached locally
    * - Prediction contracts
      - Polymarket
      - Market price history
@@ -107,6 +111,7 @@ When you run a backtest, several important files are generated, each prefixed by
    backtesting.thetadata
    backtesting.ibkr
    backtesting.alpaca
+   backtesting.bitkub
    backtesting.tearsheet_html
    backtesting.trades_files
    backtesting.indicators_files

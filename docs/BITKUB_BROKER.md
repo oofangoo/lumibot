@@ -19,6 +19,7 @@ Bitkub is a Thai spot exchange (THB and USDT quote markets). Code map:
 | Broker (orders, cancel, balances/positions, polling stream) | `lumibot/brokers/bitkub.py` (`Bitkub`) |
 | Credentials / selection | `lumibot/credentials.py` (`BITKUB_CONFIG`, `BROKER=bitkub`, `DATA_SOURCE=bitkub`) |
 | Strategy default quote asset (THB/USDT instead of USD) | `lumibot/strategies/_strategy.py` |
+| Backtesting data source (completed-candle visibility, current-candle fills, cached chunked download) | `lumibot/data_sources/bitkub_backtesting_data.py`, `lumibot/backtesting/bitkub_backtesting.py`, `lumibot/tools/bitkub_history.py` |
 | Tests + recorded fixtures | `tests/test_bitkub_helpers.py`, `tests/test_data_source_bitkub.py`, `tests/test_broker_bitkub.py`, `tests/test_bitkub_strategy_defaults.py`, `tests/fixtures/bitkub/` |
 | User guide | `docsrc/brokers.bitkub.rst` |
 
@@ -64,10 +65,18 @@ These need a keyed validation by the account owner (see the checklist below). Th
 - **Cash is the total quote balance** (CCXT precedent), so THB reserved by open buys is counted; the exchange rejects an unaffordable buy (error 18).
 - **Strategy default quote asset** follows the broker (THB/USDT) like Bitunix's USDT special case; USD markets do not exist on Bitkub.
 
+## Backtesting
+
+`BitkubBacktesting` downloads candles lazily (chunked, cached; coverage is recorded only after every request succeeded) and serves
+them with the CCXT crypto model: strategies see completed candles only; fills use the candle that starts now. Why not `PandasData`:
+it exposes the candle labelled "now" with its full close, so UTC-start-stamped daily candles leak a day of future into signals
+(reproduced on synthetic data). The engine's CCXT-keyed branches were extended to `BITKUB` (4 in `backtesting_broker.py`, 1 in
+`_strategy.py`). Candles have no bid/ask, so fills carry no spread unless the caller adds slippage; fees (0.25%/side on a standard
+account) must be passed to `backtest()`.
+
 ## Known gaps / future work
 
 - WebSocket streaming (`/api/v3/market/wstoken`, order/match updates, public ticker/order book) for lower-latency fills.
-- A backtesting data source over `/tradingview/history` (note the duplicate-candle quirk above).
 - Emulated stop orders (client-side) if a user needs them, clearly labelled as not broker-protected.
 - Discovering open orders in markets the account neither holds nor has traded without `BITKUB_SYMBOLS`.
 

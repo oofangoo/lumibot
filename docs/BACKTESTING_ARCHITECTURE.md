@@ -843,6 +843,14 @@ high, low, close and volume are not known at its opening time. Coverage lives in
 `tests/test_backtesting_ccxt_execution_semantics.py` and includes actual adapter
 history plus broker execution against the same synthetic cached candles.
 
+`BitkubBacktesting` (`lumibot/data_sources/bitkub_backtesting_data.py`, `SOURCE = "BITKUB"`) follows exactly the same model and is
+wired into the same engine branches as CCXT (`_execution_bar_request`, the execution-bar path, sub-day current-bar checks and the
+crypto benchmark in `_strategy.py`). Bitkub also stamps candles at their open. Feeding such candles to `PandasData` is NOT safe:
+`PandasData` shows a strategy the bar labelled "now" with its full close, i.e. a day of lookahead for UTC-start-stamped daily
+crypto bars (verified on synthetic candles: at the instant a candle starts, `get_last_price` returned its close). Coverage is in
+`tests/test_bitkub_backtesting.py`, which compares real engine trades with an independent pandas model on a path where any
+lookahead changes the trades, and checks that the model itself is sensitive to lookahead.
+
 IBKR's `bar=1d` history for crypto is not a clean midnight-to-midnight 24/7 day series, and its timestamps can lag the
 simulation clock used by daily-cadence strategies. To keep daily backtests stable (no “stale end of data” refresh loops),
 LumiBot derives **crypto daily bars** from intraday history and aligns them to midnight day buckets in `LUMIBOT_DEFAULT_PYTZ`

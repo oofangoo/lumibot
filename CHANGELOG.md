@@ -4,9 +4,11 @@
 
 ### Added
 - Bitkub (Thai spot crypto, THB and USDT markets) broker and data source: `Bitkub` broker, `BitkubData`, `BitkubClient` REST helper, `BROKER=bitkub` / `DATA_SOURCE=bitkub` selection, and `BITKUB_API_KEY`, `BITKUB_API_SECRET`, `BITKUB_QUOTE_ASSET`, `BITKUB_SYMBOLS` environment variables. Market data needs no API key. Supports market and limit orders, cancel, balances and positions with REST polling; rejects stop/bracket/OCO/multi-leg orders explicitly because Bitkub has none. See `docsrc/brokers.bitkub.rst` and `docs/BITKUB_BROKER.md`.
+- `BitkubBacktesting` / `BitkubBacktestingData`: backtest on real Bitkub candles with no API key. Candles are downloaded in bounded chunks and cached on disk (a range is recorded as downloaded only after every request succeeded); strategies see completed candles only and orders fill on the current candle's open, the same crypto execution model as CCXT. See `docsrc/backtesting.bitkub.rst`.
 - Bitkub candle history keeps the most complete version of the conflicting duplicate rows the exchange returns for one timestamp, returns completed bars only, and never fills gaps.
 
 ### Changed
+- The backtesting engine's CCXT-specific branches (execution-bar request, sub-day current-bar check, crypto benchmark) now also apply to the `BITKUB` data source.
 - Strategies running on the Bitkub broker default `quote_asset` to the broker's quote currency (THB/USDT) instead of USD, because Bitkub has no USD markets.
 
 ### Notes
