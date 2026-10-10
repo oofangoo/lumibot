@@ -88,6 +88,8 @@ _DEFAULT_RATE_LIMIT_PER_SECOND = 50
 _RATE_LIMIT_BLOCK_SECONDS = 30.0  # documented block after exceeding a limit
 
 RESOLUTIONS = ("1", "5", "15", "60", "240", "1D")
+SECONDS_BY_RESOLUTION = {"1": 60, "5": 300, "15": 900, "60": 3600, "240": 14400, "1D": 86400}
+CANDLE_COLUMNS = ["t", "open", "high", "low", "close", "volume"]
 
 
 class BitkubAPIError(Exception):
@@ -161,6 +163,39 @@ def parse_symbol(symbol: str) -> tuple:
     if len(pieces) != 2 or not all(pieces):
         raise ValueError(f"Bitkub symbols look like BTC_THB, got {symbol!r}")
     return pieces[0], pieces[1]
+
+
+def candles_frame(payload):
+    """A ``/tradingview/history`` payload as a DataFrame (``t`` in Unix seconds plus OHLCV floats).
+
+    Empty (with the right columns) when the exchange reports ``no_data``: absence stays absence.
+    """
+    import pandas as pd
+
+    if not isinstance(payload, dict) or payload.get("s") != "ok" or not payload.get("t"):
+        return pd.DataFrame(columns=CANDLE_COLUMNS)
+    return pd.DataFrame(
+        {
+            "t": [int(t) for t in payload["t"]],
+            "open": [float(v) for v in payload["o"]],
+            "high": [float(v) for v in payload["h"]],
+            "low": [float(v) for v in payload["l"]],
+            "close": [float(v) for v in payload["c"]],
+            "volume": [float(v) for v in payload["v"]],
+        }
+    )
+
+
+def clean_candles(frame):
+    """Drop corrupt rows and resolve the exchange's conflicting duplicate candles; ascending by ``t``.
+
+    Rows with a non-positive price are dropped (never repaired). Bitkub can return several rows for one timestamp with
+    different volume/high/close, even for a one-candle query; the most complete version has the largest volume (its
+    close
+    matches the next candle's open), so that row is kept. Nothing is ever filled in or interpolated.
+    """
+    frame = frame[(frame[["open", "high", "low", "close"]] > 0).all(axis=1)]
+    return frame.sort_values(["t", "volume"], kind="stable").drop_duplicates("t", keep="last").reset_index(drop=True)
 
 
 class _RateLimiter:

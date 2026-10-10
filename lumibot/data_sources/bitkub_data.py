@@ -48,6 +48,18 @@ def _get_client_class():
     return BitkubClient
 
 
+def candles_frame(payload):
+    from lumibot.tools.bitkub_helpers import candles_frame as _candles_frame
+
+    return _candles_frame(payload)
+
+
+def clean_candles(frame):
+    from lumibot.tools.bitkub_helpers import clean_candles as _clean_candles
+
+    return _clean_candles(frame)
+
+
 def _get_assets_mapping_class():
     from lumibot.entities import AssetsMapping
 
@@ -213,29 +225,12 @@ class BitkubData(DataSource):
     def _history_frame(self, data: dict, interval: int, end_ts: int):
         """Turn a /tradingview/history payload into a clean, completed-bars-only OHLCV frame (possibly empty)."""
         columns = ["open", "high", "low", "close", "volume"]
-        if not isinstance(data, dict) or data.get("s") != "ok" or not data.get("t"):
+        raw = candles_frame(data)
+        if raw.empty:
             return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], tz="UTC"))
-        frame = pd.DataFrame(
-            {
-                "t": [int(t) for t in data["t"]],
-                "open": [float(v) for v in data["o"]],
-                "high": [float(v) for v in data["h"]],
-                "low": [float(v) for v in data["l"]],
-                "close": [float(v) for v in data["c"]],
-                "volume": [float(v) for v in data["v"]],
-            }
-        )
-        frame = frame[
-            (frame[["open", "high", "low", "close"]] > 0).all(axis=1)
-        ]  # drop corrupt rows; never invent replacements
-        # Conflicting duplicates: keep the most complete version of each candle (largest volume; the last one on ties).
-        before = len(frame)
-        frame = frame.sort_values(["t", "volume"], kind="stable").drop_duplicates("t", keep="last")
-        if len(frame) < before:
-            logger.debug(
-                "Bitkub returned %s conflicting duplicate candle row(s); kept the highest-volume version",
-                before - len(frame),
-            )
+        frame = clean_candles(raw)  # corrupt rows dropped, conflicting duplicates resolved (see the helper)
+        if len(frame) < len(raw):
+            logger.debug("Bitkub history: dropped %s corrupt/duplicate candle row(s)", len(raw) - len(frame))
         frame = frame[frame["t"] + interval <= end_ts]  # completed candles only
         frame.index = pd.to_datetime(frame["t"], unit="s", utc=True)
         return frame[columns]
