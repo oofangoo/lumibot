@@ -37,6 +37,18 @@ class TrendPortfolio(Strategy):
     parameters = {"group": "stocks", "budget_total": 50_000, "stop_pct": 0.08, "min_trade_usd": 200, "dd_halt": 0.20, "use_state_file": True}
 
     # ---------------------------------------------------------------- helpers
+    def log_message(self, message, *args, **kwargs):
+        """Live runs also append every decision to logs/lumi_<group>_decisions.log (LumiBot prints nothing in run-once mode)."""
+        if not self.is_backtesting:
+            try:
+                path = WS / "logs" / f"lumi_{self.parameters['group']}_decisions.log"
+                path.parent.mkdir(exist_ok=True)
+                with path.open("a", encoding="utf-8") as f:
+                    f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S} {message}\n")
+            except Exception:
+                pass  # logging must never block trading
+        return super().log_message(message, *args, **kwargs)
+
     def initialize(self):
         self.sleeptime = "1D"
         grp = GROUPS[self.parameters["group"]]
