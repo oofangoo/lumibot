@@ -12,6 +12,16 @@ Hard rules:
 - Log each experiment in `EXPERIMENT_LOG.md` and each action in the "Action log" of `DIARY.md`.
 - Be honest about results: say so when a backtest fails or an expectation is lowered.
 
+## Leverage LumiBot first (standing rule from the user, 2026-10-10: "make sure we are leveraging LumiBot as much as possible ... always")
+This workspace exists to exercise LumiBot. Use its own facilities before writing anything by hand, and say in the reply which ones were used.
+- **Charts**: `Strategy.add_line` / `add_marker` / `add_ohlc` (use `dt=` to place points at other dates, `plot_name=` for subplots), run through a
+  LumiBot backtest (`BitkubBacktesting` for Bitkub data) so `plot_indicators` writes the Plotly `*_indicators.html`. Also `plot_returns` (trades chart) and the
+  QuantStats tearsheet. Do not hand-draw SVG/HTML charts unless LumiBot cannot express the picture; if so, state what it lacks.
+- **Data and backtests**: LumiBot data sources and `run_backtest`; `self.indicators` for SMA/RSI/etc.; broker classes for live. Plain pandas only where LumiBot
+  has no equivalent (multi-coin cross-sectional studies, percentile statistics) or as a deliberate independent cross-check, and say which.
+- **Missing capability**: prefer adding it to the LumiBot fork (`..\lumibot-dev`, topic branch, tests, docs) over working around it.
+- Before building anything, search `..\lumibot-dev\lumibot` and `docsrc` for an existing facility.
+
 ## Code management (since 2026-10-10)
 This folder is its own git repo on branch `trading-workspace`. `origin` is the user's **public** fork (https://github.com/oofangoo/lumibot.git);
 the branch has unrelated history from the fork's `dev` (which mirrors LumiBot). `..\repo` is the LumiBot clone: `origin` = the fork, `upstream` = Lumiwealth.
