@@ -1,6 +1,6 @@
 # Pinned environment for the paper-trading workspace (Python 3.12). Regenerate with: <repo>\.venv\Scripts\python.exe -m pip freeze
-# LumiBot is installed editable from the local clone, pinned at upstream tag v4.6.9 = commit 50894f8df03ddffc23e4cc77799402d9a6257937 (Lumiwealth/lumibot).
-# Do NOT pull newer LumiBot into the live paper test without re-validating (the fork's dev is already ahead of this pin).
+# LumiBot is installed editable from the local clone, pinned at upstream tag v4.6.18 = commit 730d5608f3ee625f0a30dc15e8cc512205dd2a2b (Lumiwealth/lumibot); was v4.6.9 (50894f8df03d) until 2026-10-13.
+# Do NOT pull newer LumiBot into the live paper test without re-validating.
 aiodns==4.0.4
 aiohappyeyeballs==2.7.1
 aiohttp==3.14.4
