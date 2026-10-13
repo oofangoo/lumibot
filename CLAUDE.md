@@ -34,6 +34,6 @@ the branch has unrelated history from the fork's `dev` (which mirrors LumiBot). 
 - **Never commit** `.env`, `DIARY.md`, `EXPERIMENT_LOG.md`, `state/`, `logs/`, `data/`, absolute personal paths or credentials: the remote is public.
   `.githooks/pre-commit` blocks them (enable on a fresh clone with `git config core.hooksPath .githooks`). Never use `--no-verify`.
 - Never force-push or rewrite pushed history. Push with `git push origin trading-workspace --follow-tags`.
-- Keep `..\repo` pinned at LumiBot v4.6.9 (commit 50894f8d, see `requirements.lock.txt`) for the whole paper test. We have not modified LumiBot
+- Keep `..\repo` pinned at LumiBot v4.6.18 (commit 730d5608, upgraded from v4.6.9 on 2026-10-13 after an identical-result parity backtest; see `requirements.lock.txt`) for the whole paper test. We have not modified LumiBot
   itself (the bracket-order workaround lives in `strategies\lumi_alpaca_compat.py`); upgrade only deliberately, then re-validate with a parity backtest.
 - The journals stay local while the remote is public. If the user wants them versioned, they should create a private repo for them.
