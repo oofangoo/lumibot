@@ -8,6 +8,9 @@ Hard rules:
 - Never place real-money orders or change `ALPACA_IS_PAPER=true`. Moving to real money is the user's decision, after 4-8 weeks of paper results.
 - Never read or print the values in `.env`. Use `research\check_alpaca.py` to verify connectivity.
 - Only SPY, QQQ, SHV and BTC/USD belong to the bot; never touch other positions in the account.
+  Exception (handover from the user, 2026-10-20): the MSFT position is now managed by Claude on the user's behalf, paper account only, outside the
+  bot's allowlist and judged separately from the bot. Status: `.\run.ps1 research\check_msft.py` (read-only). Rules for it: no adds without the user's
+  say-so, tell the user about every order placed or cancelled, keep a protective stop on any shares held, never touch the four bot symbols while doing it.
 - Run scripts via `.\run.ps1 <script>` from this folder (sets the Avast CA bundle and the venv).
 - Log each experiment in `EXPERIMENT_LOG.md` and each action in the "Action log" of `DIARY.md`.
 - Be honest about results: say so when a backtest fails or an expectation is lowered.
